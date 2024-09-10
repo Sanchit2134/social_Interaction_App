@@ -1,8 +1,12 @@
 import express, { urlencoded } from 'express';
-import bodyParser from 'body-parser';
+import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import dotenv from 'dotenv';
+import connectDB from './utils/db.js';
 
+dotenv.config();
 const app = express();
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(urlencoded({ extended: true }));
@@ -13,8 +17,15 @@ const corsOptions = {
     };
 app.use(cors(corsOptions));
 
-const port = 3000;
+
+app.get("/", (_, res) => {
+  return res.status(200).json({
+      message: "Hello, World!",
+      success: true,
+  });
+});
 
 app.listen(port, () => {
+  connectDB();
   console.log(`Server started on port ${port}`);
 })
