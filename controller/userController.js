@@ -1,65 +1,66 @@
-import { User } from "../models/userModel";
+import { User } from "../models/userModel.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import getDataUri from "../utils/datauri";
-import cloudinary from "../utils/cloudinary";
+import getDataUri from "../utils/datauri.js";
+import cloudinary from "../utils/cloudinary.js";
 
 // Register
 export const register = async (req, res) => {
-    try{
-      const {username, email, password} = req.body;
-      if(!username || !email || !password){
-        return res.status(400).json({
-            message: "All fields are required",
-            sucess: false
+    console.log('req: ', req.body);
+    try {
+        const { username, email, password } = req.body;
+        if (!username || !email || !password) {
+            return res.status(400).json({
+                message: "All fields are required",
+                sucess: false
+            });
+        }
+        const user = await User.findOne({ email });
+        if (user) {
+            return res.status(401).json({
+                message: "User already exists",
+                sucess: false
+            });
+        }
+        const hashPassword = await bcrypt.hash(password, 10);
+        await User.create({
+            username,
+            email,
+            password: hashPassword
         });
-      }
-      const user = await User.findOne({email});
-      if(user){
-        return res.status(401).json({
-            message: "User already exists",
-            sucess: false
-        }); 
-      }
-      const hashPassword = await bcrypt.hash(password, 10);
-      await User.create({
-        username,
-        email,
-        password: hashPassword
-      });
-      return res.status(201).json({
-        message: "User created successfully",
-        sucess: true
-      });
+        return res.status(201).json({
+            message: "User created successfully",
+            sucess: true
+        });
 
     }
-    catch(error){
+    catch (error) {
         console.log(error);
 
     }
 };
 
 //Login
-export const Login = async(req, res) => {
-    try{
-        const {email, password} = req.body;
-        if(!email || !password){
+export const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
             return res.status(400).json({
                 message: "All fields are required",
                 sucess: false
             });
         }
 
-        let user = await User.findOne({email});
-        if(!user){
+        let user = await User.findOne({ email });
+        if (!user) {
             return res.status(401).json({
                 message: "Invalid credentials",
                 sucess: false
             });
-        }  
+        }
         //create new user
         const isPasswordMatch = await bcrypt.compare(password, user.password);
-        if(!isPasswordMatch){
+        if (!isPasswordMatch) {
             return res.status(401).json({
                 message: "Invalid credentials",
                 sucess: false
@@ -76,69 +77,73 @@ export const Login = async(req, res) => {
             posts: user.post
         }
 
-        const token =jwt.sign({userId: user._id}, process.env.JWT_SECRET, {expiresIn: "1d"});
-        return res.cookie('token',token, {httpOnly: true, sameSite: 'strict', maxAge: 1*24*60*60*1000}).json({     //for more security purpose
+        const token = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, { expiresIn: "1d" });
+        return res.cookie('token', token, { 
+            httpOnly: true, 
+            sameSite: 'strict', 
+            maxAge: 1 * 24 * 60 * 60 * 1000 
+        }).json({     //for more security purpose
             message: `Welcome back ${user.username}`,
             success: true,
             user
-        })   
+        })
 
     }
-    catch(error){
+    catch (error) {
         console.log(error);
     }
 };
 
 //Logout
-export const logout = async(_,res) => {
-    try{
-        res.cookie('token','',{maxAge: 0}).json({
+export const logout = async (_, res) => {
+    try {
+        res.cookie('token', '', { maxAge: 0 }).json({
             message: "Logout successfully",
             success: true
         });
     }
-    catch(error){
+    catch (error) {
         console.log(error);
     }
 }
 
 //User Profile
 export const userProfile = async (req, res) => {
-    try{
-        const {userId} = req.param.id;
-        const user = await User.findById(userId);
+    try {
+        const { id } = req.params;
+        const user = await User.findById(id).select("-password");
         return res.status(200).json({
             user,
             success: true
         });
 
     }
-    catch(error){
+    catch (error) {
         console.log(error);
     }
 };
 
 //Edit User Profile
-export const editProfile = async(req,res)=>{
-    try{
+export const editProfile = async (req, res) => {
+    try {
         const userId = req.id;
-        const {bio,gender} = req.body;
-        const profilePicture = req.file;
+        const { bio, gender } = req.body;
+        const profilePicture = req.files.filename;
         let cloudResponse;
-        if(profilePicture){
+        if (profilePicture) {
             const fileUri = getDataUri(profilePicture);
             cloudResponse = await cloudinary.uploader.upload(fileUri)
-        }   
-        const user = await User.findById(userId);
-        if(!user){
+        }
+        const user = await User.findById(userId).select("-password");
+        if (!user) {
             return res.status(404).json({
                 message: "User not found",
                 success: false
             });
         }
-        if(bio) user.bio = bio;
-        if(gender) user.gender = gender;
-        if(cloudResponse) user.profilePicture = cloudResponse.secure_url;
+        if (bio) user.bio = bio;
+        if (gender) user.gender = gender;
+        if (cloudResponse) user.profilePicture = cloudResponse.secure_url;
 
         await user.save();
 
@@ -148,15 +153,15 @@ export const editProfile = async(req,res)=>{
             user
         });
     }
-    catch(error){
+    catch (error) {
         console.log(error);
     }
 }
 
-export const getSuggestedUsers = async (req,res) =>{
-    try{
-        const suggestedUsers = await User.find({_id:{$ne:req.id}}).select("-password")
-        if(!suggestedUsers){
+export const getSuggestedUsers = async (req, res) => {
+    try {
+        const suggestedUsers = await User.find({ _id: { $ne: req.id } }).select("-password")
+        if (!suggestedUsers) {
             return res.status(400).json({
                 message: "Currently do not have any users"
             })
@@ -167,21 +172,63 @@ export const getSuggestedUsers = async (req,res) =>{
         })
 
     }
-    catch(error){
+    catch (error) {
         console.log(error);
-        
+
 
     }
 }
 
 //Follow Or Unfollow
-export const followOrUnfollow = ()=>{
-    try{
+export const followOrUnfollow = async () => {
+    try {
         const followKarneWala = req.id;
-        const followKiyaJanaWala = req.params.id;
+        const jisKoFollowKarunga = req.params.id;
+
+        if (followKarneWala === jisKoFollowKarunga) {
+            return res.status(400).json({
+                message: "You cannot follow yourself",
+                success: false
+            });
+        }
+
+        const user = await User.findById(followKarneWala);
+        const targetUser = await User.findById(jisKoFollowKarunga);
+
+        if (!user || !targetUser) {
+            return res.status(404).json({
+                message: "User not found",
+                success: false
+            });
+        }
+
+        const isFollowing = user.followings.includes(jisKoFollowKarunga);
+        if (isFollowing) {
+            //unfollow logic 
+            await Promise.all([
+                User.updateOne({ _id: followKarneWala }, { $push: { followings: jisKoFollowKarunga } }),
+                User.updateOne({ _id: jisKoFollowKarunga }, { $push: { followings: followKarneWala } })
+            ])
+            return res.status(200).json({
+                message: "Unfollowed successfully",
+                success: true
+            })
+        }
+        else {
+            //follow logic
+            await Promise.all([
+                User.updateOne({ _id: followKarneWala }, { $push: { followings: jisKoFollowKarunga } }),
+                User.updateOne({ _id: jisKoFollowKarunga }, { $push: { followings: followKarneWala } })
+            ])
+            return res.status(200).json({
+                message: "followed successfully",
+                success: true
+            })
+
+        }
 
     }
-    catch(error){
+    catch (error) {
 
     }
 }

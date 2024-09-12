@@ -1,16 +1,19 @@
-import jsw from 'jsonwebtoken';
-import { Message } from '../models/messageModel';
+import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
+
+dotenv.config();
+
 const isAuthenticated = async (req, res, next) => {
-    try{
-        const token = req.cookie.token;
-        if(!token){
+    try {
+        const { token } = req.cookies
+        if (!token) {
             return res.status(401).json({
                 message: "User not authenticated",
                 sucess: false
             });
         }
         const decode = jwt.verify(token, process.env.SECRET_KEY);
-        if(!decode){
+        if (!decode) {
             return res.status(401).json({
                 message: "User not authenticated",
                 sucess: false
@@ -19,7 +22,8 @@ const isAuthenticated = async (req, res, next) => {
         req.id = decode.userId;
         next()
     }
-    catch(err){
+    catch (err) {
         console.log(err);
     }
 }
+export default isAuthenticated;

@@ -6,10 +6,11 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     profilePicture: { type: String, default: "" },
     bio: { type: String, default: "" },
-    gender: { type: String, enum:['male','female'] },
-    followers: [ {type: mongoose.Schema.Types.ObjectedId, ref: 'User'}],
-    followings: [ {type: mongoose.Schema.Types.ObjectedId, ref: 'User'}],  
-    post: [{type: mongoose.Schema.Types.ObjectedId, ref: 'Post'}],
-    bookmarks: [{type: mongoose.Schema.Types.ObjectedId, ref: 'Post'}],
-},{timestamps: true});
-export const User = mongoose.model("User", userSchema); 
+    gender: { type: String, enum: ['male', 'female'] },
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    followings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],  // Changed to plural
+    bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+}, { timestamps: true });
+
+export const User = mongoose.model("User", userSchema);
