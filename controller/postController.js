@@ -123,24 +123,34 @@ export const disLikePost = async(req,res)=>{
 
 //add comment 
 export const addComment = async(req,res)=>{
-    const postId = req.params
-    const commentkarneWalaUserKiId = req.id;
-    const {text} = req.body
+    try{
+        const postId = req.params
+        const commentkarneWalaUserKiId = req.id;
+        const {text} = req.body
+    
+        const post = await Post.findById(postId)
+    
+        if(!text)return res.status(400).json({message: 'text is required', success:false});
+    
+        const comment = await Comment.create({
+            text,
+            author:commentkarneWalaUserKiId,
+            post: postId
+        }).populate({
+            path: 'author',
+            select:'username , profilePicture'
+        });
+            post.comments.push(comment._id);
+            await post.save()
 
-    const post = await Post.findById(postId)
-    if(!text)return res.status(400).json({message: 'text is required', success:false});
+            return re.status(201).json({
+                message: 'Comment Added',
+                comment,
+                success:true
+            })
+    }
+    catch(error){
+        console.log(error)
+    }
 
-    const comment = await Comment.create({
-        text,
-        authir:commentkarneWalaUserKiId,
-        post: postId.populate(
-            {
-                path: 'author',
-                select: 'username, profilePicture'
-            }
-        )
-        post.comments.push(comment._id);
-        await post.save()
-
-    })
 }
