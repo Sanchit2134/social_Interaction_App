@@ -1,4 +1,3 @@
-import { text } from "express";
 import mongoose from "mongoose";
 const commentScehma = new mongoose.Schema({
     text: {type: String, required: true},

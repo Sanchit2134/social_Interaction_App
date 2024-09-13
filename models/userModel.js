@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
     gender: { type: String, enum: ['male', 'female'] },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     followings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],  // Changed to plural
+    posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],  
     bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
 }, { timestamps: true });
 
