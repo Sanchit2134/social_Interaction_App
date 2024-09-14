@@ -1,8 +1,5 @@
-import res from "express/lib/response.js";
 import { Post } from "../models/postModel.js";
 import { User } from "../models/userModel.js";
-import req from "express/lib/request.js";
-import { response } from "express";
 
 export const addNewPost = async (req, res) => {
     try {
