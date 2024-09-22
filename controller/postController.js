@@ -1,6 +1,7 @@
 import { Post } from "../models/postModel.js";
 import { User } from "../models/userModel.js";
 
+//add new post
 export const addNewPost = async (req, res) => {
     try {
         const { caption } = req.body;
@@ -215,7 +216,7 @@ export const bookmark = async(req,res) =>{
             return res.status(200).json({ type: 'unsaved', message: "Post removed from bookmark", success: true })
         }
         else {
-            //have to bookmark th post
+            //have to bookmark the post
             await user.updateOne({ $addToSet: { bookmarks: post._id } });
             await user.save();
             return res.status(200).json({ type: 'saved', message: "Post bookmarked", success: true })
