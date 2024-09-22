@@ -42,7 +42,7 @@ export const register = async (req, res) => {
 };
 
 //Login
-export const login = async (req, res) => {
+export const login = async (req, res) => { 
     try {
         const { email, password } = req.body;
         if (!email || !password) {
@@ -133,12 +133,11 @@ export const userProfile = async (req, res) => {
         console.log(error);
     }
 };
-
 //Edit User Profile
 export const editProfile = async (req, res) => {
     try {
         const userId = req.id;
-        const { bio, gender } = req.body;
+        const { bio, gender } = req.body; 
         const profilePicture = req.files.filename;
         let cloudResponse;
         if (profilePicture) {
@@ -193,10 +192,10 @@ export const getSuggestedUsers = async (req, res) => {
 //Follow Or Unfollow
 export const followOrUnfollow = async () => {
     try {
-        const followKarneWala = req.id;
-        const jisKoFollowKarunga = req.params.id;
+        const followKarneWala = req.id;  //logged in user
+        const jisKoFollowKarna = req.params.id;  //user to follow like dost ko follow karna ja dost k dost ko follow karna 
 
-        if (followKarneWala === jisKoFollowKarunga) {
+        if (followKarneWala === jisKoFollowKarna) {
             return res.status(400).json({
                 message: "You cannot follow yourself",
                 success: false
@@ -204,7 +203,7 @@ export const followOrUnfollow = async () => {
         }
 
         const user = await User.findById(followKarneWala);
-        const targetUser = await User.findById(jisKoFollowKarunga);
+        const targetUser = await User.findById(jisKoFollowKarna);
 
         if (!user || !targetUser) {
             return res.status(404).json({
@@ -212,13 +211,13 @@ export const followOrUnfollow = async () => {
                 success: false
             });
         }
-
-        const isFollowing = user.followings.includes(jisKoFollowKarunga);
+        //check if user is already following the target user
+        const isFollowing = user.followings.includes(jisKoFollowKarna);
         if (isFollowing) {
             //unfollow logic 
             await Promise.all([
-                User.updateOne({ _id: followKarneWala }, { $push: { followings: jisKoFollowKarunga } }),
-                User.updateOne({ _id: jisKoFollowKarunga }, { $push: { followings: followKarneWala } })
+                User.updateOne({ _id: followKarneWala }, { $pull: { followings: jisKoFollowKarna } }),
+                User.updateOne({ _id: jisKoFollowKarna }, { $pull: { followings: followKarneWala } })
             ])
             return res.status(200).json({
                 message: "Unfollowed successfully",
@@ -228,8 +227,8 @@ export const followOrUnfollow = async () => {
         else {
             //follow logic
             await Promise.all([
-                User.updateOne({ _id: followKarneWala }, { $push: { followings: jisKoFollowKarunga } }),
-                User.updateOne({ _id: jisKoFollowKarunga }, { $push: { followings: followKarneWala } })
+                User.updateOne({ _id: followKarneWala }, { $push: { followings: jisKoFollowKarna } }),
+                User.updateOne({ _id: jisKoFollowKarna }, { $push: { followings: followKarneWala } })
             ])
             return res.status(200).json({
                 message: "followed successfully",
