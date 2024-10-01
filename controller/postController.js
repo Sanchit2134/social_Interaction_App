@@ -1,5 +1,7 @@
+import sharp from "sharp";
 import { Post } from "../models/postModel.js";
 import { User } from "../models/userModel.js";
+import cloudinary from "../utils/cloudinary.js";
 
 //add new post
 export const addNewPost = async (req, res) => {
@@ -38,6 +40,8 @@ export const addNewPost = async (req, res) => {
 
     }
     catch (error) {
+        console.log('error: ', error);
+        return res.status(500).json({ message: error.message });
 
     }
 }
@@ -61,7 +65,7 @@ export const getAllPost = async (req, res) => {
     } catch (error) {
         console.log(error)
     }
-}
+} 
 
 //get user post that is available on profile section
 export const getUserPost = async () => {
@@ -200,12 +204,12 @@ export const deletePost = async (req, res) => {
 }
 
 //bookmark post 
-export const bookmark = async(req,res) =>{
+export const bookmark = async (req, res) => {
     try {
         const postId = req.params.id
         const authorId = req.id
         const post = await Post.findById(postId)
-        
+
         if (!post) return res.status(404).json({ message: 'Post not found', success: false })
 
         const user = await User.findById(authorId)
@@ -224,6 +228,6 @@ export const bookmark = async(req,res) =>{
     }
     catch (error) {
         console.log(error);
-    
+
     }
 }
