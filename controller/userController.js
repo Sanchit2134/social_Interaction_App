@@ -3,7 +3,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
-import { Post } from "../models/postModel.js";
 
 // Register
 export const register = async (req, res) => {
@@ -122,9 +121,9 @@ export const logout = async (_, res) => {
 export const userProfile = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = await User.findById(id).select("-password");
+        const user = await User.findById(id).populate({path: 'posts', createdAt:-1}).populate('bookmarks');
         return res.status(200).json({
-            user,
+            user,   
             success: true
         });
 
@@ -168,6 +167,7 @@ export const editProfile = async (req, res) => {
     }
 }
 
+//SuggestedUsers
 export const getSuggestedUsers = async (req, res) => {
     try {
         const suggestedUsers = await User.find({ _id: { $ne: req.id } }).select("-password")
@@ -241,4 +241,4 @@ export const followOrUnfollow = async () => {
     catch (error) {
 
     }
-}
+}       
