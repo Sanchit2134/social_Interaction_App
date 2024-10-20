@@ -3,6 +3,7 @@ import { Post } from "../models/postModel.js";
 import { User } from "../models/userModel.js";
 import cloudinary from "../utils/cloudinary.js";
 import { Comment } from "../models/commentModel.js";
+import { getRecieverSocketId, io } from "../socket/socket.js";
 
 //add new post
 export const addNewPost = async (req, res) => { 
@@ -103,6 +104,21 @@ export const likePost = async (req, res) => {
         //like logic started
         await post.updateOne({ $addToSet: { likes: likeKarneWaleKiId } })
         await post.save();
+
+        //implement socket.io for real time notification
+        const user = await User.findById(likeKarneWaleKiId).select('username profilePicture');
+        const postOwnerId = post.author.toString();
+        if(postOwnerId !== likeKarneWaleKiId){
+            const notification = {
+                type: 'like',
+                userId: likeKarneWaleKiId,
+                userDetail: user,
+                postId,
+                message: 'Your post was liked'
+            }
+            const postOwnerSocketId = getRecieverSocketId(postOwnerId);
+            io.to(postOwnerSocketId).emit('newNotification', notification);
+        }
     } catch (error) {
         console.log(error);
 
@@ -116,9 +132,24 @@ export const disLikePost = async (req, res) => {
         const postId = req.params.id;
         const post = await Post.findById(postId);
         if (!post) return res.status(404).json({ message: 'Post not found', success: 'false' })
-        //like logic started
+        //Dislike logic started
         await post.updateOne({ $pull: { dislike: dislikeKarneWaleKiId } })
         await post.save();
+ 
+         //implement socket.io for real time notification
+         const user = await User.findById(dislikeKarneWaleKiId).select('username profilePicture');
+         const postOwnerId = post.author.toString();
+         if(postOwnerId !== dislikeKarneWaleKiId){
+             const notification = {
+                 type: 'dislike',
+                 userId: dislikeKarneWaleKiId,
+                 userDetail: user,
+                 postId,
+                 message: 'Your post was disliked'
+             }
+             const postOwnerSocketId = getRecieverSocketId(postOwnerId);
+             io.to(postOwnerSocketId).emit('newNotification', notification);
+         }
     } catch (error) {
         console.log(error);
 
