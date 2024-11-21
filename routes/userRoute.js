@@ -3,12 +3,12 @@ import { editProfile, followOrUnfollow, getSuggestedUsers, login, logout, regist
 import isAuthenticated from '../middleware/isAuthenticated.js';
 import upload from '../middleware/multer.js';
 
-const router = express.Router();
+const router = express.Router(); 
 router.route('/register').post(register);
 router.route('/login').post(login);
 router.route('/logout').get(logout);
 router.route('/:id/profile').get(isAuthenticated, userProfile);
 router.route('/profile/edit/:id').patch(isAuthenticated, upload.single('profilePicture'), editProfile);
 router.route('/suggested').get( getSuggestedUsers);
-router.route('/followOrUnfollow/:id').get(isAuthenticated, followOrUnfollow);
+router.route('/followOrUnfollow/:id').post(isAuthenticated, followOrUnfollow);
 export default router;

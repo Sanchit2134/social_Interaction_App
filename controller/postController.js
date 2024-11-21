@@ -59,7 +59,7 @@ export const getAllPost = async (req, res) => {
                     path: 'author',
                     select: 'username profilepIcture'
                 }
-            });
+            }); 
         return res.status(200).json({
             post,
             success: true

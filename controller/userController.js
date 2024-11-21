@@ -39,6 +39,7 @@ export const register = async (req, res) => {
     }
 };
 
+
 //Login
 export const login = async (req, res) => {  
     try {
@@ -120,24 +121,24 @@ export const logout = async (_, res) => {
 //User Profile
 export const userProfile = async (req, res) => {
     try {
-        const { id } = req.params;
-        const user = await User.findById(id).populate({path: 'posts', createdAt:-1}).populate('bookmarks');
+        const userId = req.params.id;
+        let user = await User.findById(userId).select('-password')       //.populate({path: 'posts', createdAt:-1}).populate('bookmarks');
         return res.status(200).json({
             user,   
             success: true
-        });
-
+        }); 
     }
     catch (error) {
         console.log(error);
     }
 };
+
 //Edit User Profile
 export const editProfile = async (req, res) => {
     try {
         const userId = req.id;
         const { bio, gender } = req.body; 
-        const profilePicture = req.files.filename;
+        const profilePicture = req.file;
         let cloudResponse;
         if (profilePicture) {
             const fileUri = getDataUri(profilePicture);
@@ -152,7 +153,7 @@ export const editProfile = async (req, res) => {
         }
         if (bio) user.bio = bio;
         if (gender) user.gender = gender;
-        if (cloudResponse) user.profilePicture = cloudResponse.secure_url;
+        if (profilePicture) user.profilePicture = cloudResponse.secure_url;
 
         await user.save();
 
@@ -192,8 +193,8 @@ export const getSuggestedUsers = async (req, res) => {
 //Follow Or Unfollow
 export const followOrUnfollow = async () => {
     try {
-        const followKarneWala = req.id;  //logged in user
-        const jisKoFollowKarna = req.params.id;  //user to follow like dost ko follow karna ja dost k dost ko follow karna 
+        const followKarneWala = req.id;  //logged in user ki id
+        const jisKoFollowKarna = req.params.id;  //dost ki id jise follow karna hai 
 
         if (followKarneWala === jisKoFollowKarna) {
             return res.status(400).json({
@@ -215,18 +216,18 @@ export const followOrUnfollow = async () => {
         const isFollowing = user.followings.includes(jisKoFollowKarna);
         if (isFollowing) {
             //unfollow logic 
-            await Promise.all([
+            await Promise.all([   //promise.all -> is used for multiple document at the same time
                 User.updateOne({ _id: followKarneWala }, { $pull: { followings: jisKoFollowKarna } }),
                 User.updateOne({ _id: jisKoFollowKarna }, { $pull: { followings: followKarneWala } })
             ])
             return res.status(200).json({
                 message: "Unfollowed successfully",
                 success: true
-            })
+            }) 
         }
         else {
             //follow logic
-            await Promise.all([
+            await Promise.all([    //promise.all -> is used for multiple document at the same time
                 User.updateOne({ _id: followKarneWala }, { $push: { followings: jisKoFollowKarna } }),
                 User.updateOne({ _id: jisKoFollowKarna }, { $push: { followings: followKarneWala } })
             ])
