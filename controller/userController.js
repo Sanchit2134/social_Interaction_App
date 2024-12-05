@@ -69,15 +69,15 @@ export const login = async (req, res) => {
         const token = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, { expiresIn: "1d" });
         console.log('token: ', token);
         //populate each post 
-        // const populateedPost = await Promise.all(
-        //     user.posts.map(async(postId)=>{
-        //         const post = await Post.findById(postId)
-        //         if(post.author.equals(user._id)){
-        //             return post;
-        //         }
-        //         return null;
-        //     })
-        // )
+        const populatedPost = await Promise.all(
+            user.posts.map(async(postId)=>{
+                const post = await Post.findById(postId)
+                if(post.author.equals(user._id)){
+                    return post;
+                }
+                return null;
+            })
+        )
     
         user = {
             _id: user._id,
@@ -87,7 +87,7 @@ export const login = async (req, res) => {
             bio: user.bio,
             followers: user.followers,
             followings: user.followings,
-            // posts: populateedPost
+            posts: populatedPost,
         }
         return res.cookie('token', token, { 
             httpOnly: true, 
