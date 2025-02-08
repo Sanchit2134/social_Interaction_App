@@ -1,6 +1,6 @@
 import { Conversation } from "../models/conversationModel.js";
 import { Message } from "../models/messageModel.js";
-import { getRecieverSocketId, io } from "../socket/socket.js";
+import { getReceiverSocketId, io } from "../socket/socket.js";
 
 //send all messages
 export const sendMessage = async(req,res)=>{ 
@@ -24,7 +24,7 @@ export const sendMessage = async(req,res)=>{
         await Promise.all([conversation.save(), newMessage.save()])
 
         //implement socket.io for real time chat
-        const receiverSocketId = getRecieverSocketId(receiverId)
+        const receiverSocketId = getReceiverSocketId(receiverId)
         if(receiverSocketId){
             io.to(receiverSocketId).emit('newMessage', newMessage)
         }

@@ -1,84 +1,75 @@
 import { User } from "../models/userModel.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
 import { Post } from "../models/postModel.js";
-// Register
 export const register = async (req, res) => {
-    console.log('req: ', req.body);
     try {
         const { username, email, password } = req.body;
         if (!username || !email || !password) {
-            return res.status(400).json({
-                message: "All fields are required",
-                sucess: false
+            return res.status(401).json({
+                message: "Something is missing, please check!",
+                success: false,
             });
         }
         const user = await User.findOne({ email });
         if (user) {
             return res.status(401).json({
-                message: "User already exists",
-                sucess: false
+                message: "Try different email",
+                success: false,
             });
-        }
-        const hashPassword = await bcrypt.hash(password, 10);
+        };
+        const hashedPassword = await bcrypt.hash(password, 10);
         await User.create({
             username,
             email,
-            password: hashPassword
+            password: hashedPassword
         });
         return res.status(201).json({
-            message: "User created successfully",
-            sucess: true
+            message: "Account created successfully.",
+            success: true,
         });
-    }
-    catch (error) {
+    } catch (error) {
         console.log(error);
-
     }
-};
-
-
-//Login
-export const login = async (req, res) => {  
+}
+export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
-            return res.status(400).json({
-                message: "All fields are required",
-                sucess: false
+            return res.status(401).json({
+                message: "Something is missing, please check!",
+                success: false,
             });
         }
-
         let user = await User.findOne({ email });
         if (!user) {
             return res.status(401).json({
-                message: "Invalid credentials",
-                sucess: false
+                message: "Incorrect email or password",
+                success: false,
             });
         }
-        //create new user
         const isPasswordMatch = await bcrypt.compare(password, user.password);
         if (!isPasswordMatch) {
             return res.status(401).json({
-                message: "Invalid credentials",
-                sucess: false
+                message: "Incorrect email or password",
+                success: false,
             });
-        }
-        const token = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, { expiresIn: "1d" });
-        console.log('token: ', token);
-        //populate each post 
-        const populatedPost = await Promise.all(
-            user.posts.map(async(postId)=>{
-                const post = await Post.findById(postId)
+        };
+
+        const token = await jwt.sign({ userId: user._id }, process.env.SECRET_KEY, { expiresIn: '1d' });
+
+        // populate each post if in the posts array
+        const populatedPosts = await Promise.all(
+            user.posts.map( async (postId) => {
+                const post = await Post.findById(postId);
                 if(post.author.equals(user._id)){
                     return post;
                 }
                 return null;
             })
         )
-    
         user = {
             _id: user._id,
             username: user.username,
@@ -86,71 +77,61 @@ export const login = async (req, res) => {
             profilePicture: user.profilePicture,
             bio: user.bio,
             followers: user.followers,
-            followings: user.followings,
-            posts: populatedPost,
+            following: user.following,
+            posts: populatedPosts
         }
-        return res.cookie('token', token, { 
-            httpOnly: true, 
-            sameSite: 'strict', 
-            maxAge: 1 * 24 * 60 * 60 * 1000 
-        }).json({     //for more security purpose
+        return res.cookie('token', token, { httpOnly: true, sameSite: 'strict', maxAge: 1 * 24 * 60 * 60 * 1000 }).json({
             message: `Welcome back ${user.username}`,
             success: true,
             user
-        })
+        });
 
-    }
-    catch (error) {
+    } catch (error) {
         console.log(error);
     }
 };
-
-//Logout
 export const logout = async (_, res) => {
     try {
-        res.cookie('token', '', { maxAge: 0 }).json({
-            message: "Logout successfully",
+        return res.cookie("token", "", { maxAge: 0 }).json({
+            message: 'Logged out successfully.',
             success: true
         });
-    }
-    catch (error) {
+    } catch (error) {
         console.log(error);
     }
-}
-
-//User Profile
-export const userProfile = async (req, res) => {
+};
+export const getProfile = async (req, res) => {
     try {
         const userId = req.params.id;
-        let user = await User.findById(userId).populate({path: 'posts', createdAt:-1}).populate('bookmarks');
+        let user = await User.findById(userId).populate({path:'posts', createdAt:-1}).populate('bookmarks');
         return res.status(200).json({
-            user,   
+            user,
             success: true
-        }); 
-    }
-    catch (error) {
+        });
+    } catch (error) {
         console.log(error);
     }
 };
 
-//Edit User Profile
 export const editProfile = async (req, res) => {
     try {
         const userId = req.id;
-        const { bio, gender } = req.body; 
+        const { bio, gender } = req.body;
         const profilePicture = req.file;
         let cloudResponse;
+
         if (profilePicture) {
             const fileUri = getDataUri(profilePicture);
-            cloudResponse = await cloudinary.uploader.upload(fileUri)
+            cloudResponse = await cloudinary.uploader.upload(fileUri);
         }
-        const user = await User.findById(userId).select("-password");
+
+        const user = await User.findById(userId).select('-password');
         if (!user) {
             return res.status(404).json({
-                message: "User not found",
+                message: 'User not found.',
                 success: false
             });
-        }
+        };
         if (bio) user.bio = bio;
         if (gender) user.gender = gender;
         if (profilePicture) user.profilePicture = cloudResponse.secure_url;
@@ -158,88 +139,69 @@ export const editProfile = async (req, res) => {
         await user.save();
 
         return res.status(200).json({
-            message: "Profile updated successfully",
+            message: 'Profile updated.',
             success: true,
             user
         });
-    }
-    catch (error) {
+
+    } catch (error) {
         console.log(error);
     }
-}
-
-//SuggestedUsers
+};
 export const getSuggestedUsers = async (req, res) => {
     try {
-        const suggestedUsers = await User.find({ _id: { $ne: req.id } }).select("-password")
+        const suggestedUsers = await User.find({ _id: { $ne: req.id } }).select("-password");
         if (!suggestedUsers) {
             return res.status(400).json({
-                message: "Currently do not have any users"
+                message: 'Currently do not have any users',
             })
         };
         return res.status(200).json({
-            sucess: true,
+            success: true,
             users: suggestedUsers
         })
-
-    }
-    catch (error) {
+    } catch (error) {
         console.log(error);
-
-
     }
-}
-
-//Follow Or Unfollow
-export const followOrUnfollow = async () => {
+};
+export const followOrUnfollow = async (req, res) => {
     try {
-        const followKarneWala = req.id;  //logged in user ki id
-        const jisKoFollowKarna = req.params.id;  //dost ki id jise follow karna hai 
-
-        if (followKarneWala === jisKoFollowKarna) {
+        const followKrneWala = req.id; // patel
+        const jiskoFollowKrunga = req.params.id; // shivani
+        if (followKrneWala === jiskoFollowKrunga) {
             return res.status(400).json({
-                message: "You cannot follow yourself",
+                message: 'You cannot follow/unfollow yourself',
                 success: false
             });
         }
 
-        const user = await User.findById(followKarneWala);
-        const targetUser = await User.findById(jisKoFollowKarna);
+        const user = await User.findById(followKrneWala);
+        const targetUser = await User.findById(jiskoFollowKrunga);
 
         if (!user || !targetUser) {
-            return res.status(404).json({
-                message: "User not found",
+            return res.status(400).json({
+                message: 'User not found',
                 success: false
             });
         }
-        //check if user is already following the target user
-        const isFollowing = user.followings.includes(jisKoFollowKarna);
+        // mai check krunga ki follow krna hai ya unfollow
+        const isFollowing = user.following.includes(jiskoFollowKrunga);
         if (isFollowing) {
-            //unfollow logic 
-            await Promise.all([   //promise.all -> is used for multiple document at the same time
-                User.updateOne({ _id: followKarneWala }, { $pull: { followings: jisKoFollowKarna } }),
-                User.updateOne({ _id: jisKoFollowKarna }, { $pull: { followings: followKarneWala } })
+            // unfollow logic ayega
+            await Promise.all([
+                User.updateOne({ _id: followKrneWala }, { $pull: { following: jiskoFollowKrunga } }),
+                User.updateOne({ _id: jiskoFollowKrunga }, { $pull: { followers: followKrneWala } }),
             ])
-            return res.status(200).json({
-                message: "Unfollowed successfully",
-                success: true
-            }) 
-        }
-        else {
-            //follow logic
-            await Promise.all([    //promise.all -> is used for multiple document at the same time
-                User.updateOne({ _id: followKarneWala }, { $push: { followings: jisKoFollowKarna } }),
-                User.updateOne({ _id: jisKoFollowKarna }, { $push: { followings: followKarneWala } })
+            return res.status(200).json({ message: 'Unfollowed successfully', success: true });
+        } else {
+            // follow logic ayega
+            await Promise.all([
+                User.updateOne({ _id: followKrneWala }, { $push: { following: jiskoFollowKrunga } }),
+                User.updateOne({ _id: jiskoFollowKrunga }, { $push: { followers: followKrneWala } }),
             ])
-            return res.status(200).json({
-                message: "followed successfully",
-                success: true
-            })
-
+            return res.status(200).json({ message: 'followed successfully', success: true });
         }
-
+    } catch (error) {
+        console.log(error);
     }
-    catch (error) {
-
-    }
-}       
+}
